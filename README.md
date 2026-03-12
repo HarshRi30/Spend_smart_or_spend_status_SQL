@@ -118,7 +118,7 @@ spend-smart-sql/
 | 2 | Brand Affinity Analysis | Q5 – Q8 |
 | 3 | Buying Behaviour Analysis | Q9 – Q12 |
 | 4 | Purchase Factor Analysis | Q13 – Q17 |
-| 5 | Intermediate Analysis | Q18 – Q22 |
+| 5 | Segmentation & Correlation Analysis | Q18 – Q22 |
 
 ---
 
