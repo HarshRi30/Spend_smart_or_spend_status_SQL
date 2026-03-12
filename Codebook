@@ -1,0 +1,224 @@
+# CODEBOOK — Spend Smart or Spend Status?
+### A Cross-Class Analysis of Consumer Buying Behaviour Towards Branded vs Unbranded Products in Mumbai
+
+**Author:** Rishi Agrawal   
+**GitHub:** [@HarshRi30](https://github.com/HarshRi30)
+
+---
+
+## Overview
+
+This codebook documents the encoding applied to all columns in `Dataset for Spend Smart for postgresql.csv` — the cleaned, fully-encoded dataset derived from the raw Google Forms survey (`Spend Smart or Spend Status raw.csv`).
+
+The preprocessing pipeline (`preprocessing.py`) transforms the raw 500-row export into a fully numeric, SQL-ready dataset. All multi-word string responses are mapped to compact integer codes; multi-select columns are exploded into binary dummy columns.
+
+---
+
+## Dataset Summary
+
+| Attribute | Value |
+|-----------|-------|
+| Rows | 500 |
+| Columns | 33 (email removed for privacy) |
+| Source | Google Forms survey + simulated entries for class balance |
+| Geography | Mumbai — 5 regions |
+| Preprocessing | Python (pandas) |
+| Target database | PostgreSQL 17 (`fact_respondents` table) |
+
+---
+
+## Column Reference
+
+### 1. Demographic Columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `age_group` | VARCHAR | Age bracket of respondent |
+| `gender` | SMALLINT (1–3) | Gender identity |
+| `education_level` | VARCHAR | Highest education level |
+| `occupation` | SMALLINT (1–5) | Current occupation |
+| `monthly_income` | VARCHAR | Monthly income bracket (original string) |
+| `area_of_residence` | VARCHAR | Mumbai region |
+| `class_label` | VARCHAR | Derived socioeconomic class (from `monthly_income`) |
+
+#### `gender`
+| Code | Label |
+|------|-------|
+| 1 | Male |
+| 2 | Female |
+| 3 | Prefer not to say |
+
+#### `occupation`
+| Code | Label |
+|------|-------|
+| 1 | Student |
+| 2 | Salaried employee |
+| 3 | Self-employed / Business |
+| 4 | Homemaker |
+| 5 | Other |
+
+#### `monthly_income` → `class_label` (derived)
+| `monthly_income` value | `class_label` |
+|------------------------|---------------|
+| Not applicable | Poor |
+| Below 20,000 | Poor |
+| 20,001 – 40,000 | Lower Middle |
+| 40,001 – 60,000 | Upper Middle |
+| Above 60,000 | Rich |
+
+#### `area_of_residence` (raw string — not encoded)
+Values: `South Mumbai`, `Western Suburbs`, `Central Suburbs`, `Navi Mumbai`, `Thane`
+
+---
+
+### 2. Shopping Behaviour Columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `shopping_frequency` | SMALLINT (1–4) | How often respondent shops |
+| `product_preference` | SMALLINT (1–4) | General branded vs unbranded preference |
+| `clothes_preference` | SMALLINT (1–4) | Clothing purchase preference |
+| `grocery_preference` | SMALLINT (1–4) | Grocery purchase preference |
+| `electronics_preference` | SMALLINT (1–4) | Electronics purchase preference |
+| `buying_behaviour` | SMALLINT (1–4) | Self-described buying style |
+
+#### `shopping_frequency`
+| Code | Label |
+|------|-------|
+| 1 | Rarely |
+| 2 | Occasionally |
+| 3 | Frequently |
+| 4 | Very frequently |
+
+#### `product_preference`
+| Code | Label |
+|------|-------|
+| 1 | Mostly branded |
+| 2 | Mostly unbranded |
+| 3 | Both |
+| 4 | Depends on the product |
+
+#### `clothes_preference`
+| Code | Label |
+|------|-------|
+| 1 | Branded stores only |
+| 2 | Local / unbranded shops only |
+| 3 | Both |
+| 4 | Depends on price and occasion |
+
+#### `grocery_preference`
+| Code | Label |
+|------|-------|
+| 1 | Mostly branded packaged products |
+| 2 | Mostly local / unbranded products |
+| 3 | Depends on availability |
+| 4 | Both equally |
+
+#### `electronics_preference`
+| Code | Label |
+|------|-------|
+| 1 | Branded products |
+| 2 | Unbranded / local products |
+| 3 | Depends on warranty and price |
+| 4 | Both |
+
+#### `buying_behaviour`
+| Code | Label |
+|------|-------|
+| 1 | Smart spender (value-oriented) |
+| 2 | Status-oriented buyer |
+| 3 | Combination of both |
+| 4 | Depends on the situation |
+
+---
+
+### 3. Likert Scale Columns (1–5)
+
+All columns below use a standard 5-point Likert scale:
+
+| Code | Label |
+|------|-------|
+| 1 | Strongly Disagree |
+| 2 | Disagree |
+| 3 | Neutral |
+| 4 | Agree |
+| 5 | Strongly Agree |
+
+| Column | Survey Question (abbreviated) |
+|--------|-------------------------------|
+| `branded_quality` | Branded products offer better quality than unbranded products |
+| `unbranded_is_vfm` | Unbranded products are value for money |
+| `brand__is_confidence` | I feel more confident using branded products in social situations |
+| `mumbai_brand_influence` | People in Mumbai are influenced by brand image while shopping |
+| `social_media_influence` | Social media and advertisements influence my choice of branded products |
+| `local_market_influence` | Local markets in Mumbai influence my decision to buy unbranded products |
+| `mall_influence` | Shopping malls and branded stores influence my preference for branded products |
+| `price_consciousness` | Rising cost of living in Mumbai makes me more price-conscious |
+
+> **Note:** `brand__is_confidence` has a double underscore — this matches the raw column name from the survey export and is preserved as-is in the PostgreSQL schema.
+
+---
+
+### 4. Brand-as-Status Column
+
+#### `branded_is_social_status`
+*Survey question: "Do you believe branded products reflect social status?"*
+
+| Code | Label |
+|------|-------|
+| 1 | No |
+| 2 | Sometimes |
+| 3 | Maybe |
+| 4 | Yes |
+
+> **Encoding note:** This column uses a 4-point ordinal scale (not a Likert scale). Higher values indicate stronger perception of branded products as a social status symbol. The ordering — No < Sometimes < Maybe < Yes — reflects ascending agreement with brand-as-status.
+
+---
+
+### 5. Binary Dummy Columns
+
+Two multi-select survey questions were exploded into binary (0/1) dummy columns using `pandas.str.get_dummies(sep=', ')`.
+
+#### Product Categories — `cat_*` columns
+*Survey question: "For which product categories do you prefer branded products?" (Select all that apply)*
+
+| Column | 1 = Respondent selected this category |
+|--------|---------------------------------------|
+| `cat_clothing` | Clothing |
+| `cat_electronics` | Electronics |
+| `cat_footwear` | Footwear |
+| `cat_groceries` | Groceries |
+| `cat_personal_care_products` | Personal care products |
+
+#### Purchase Decision Factors — `factor_*` columns
+*Survey question: "What factors influence your purchase decision the most?" (Select up to 3)*
+
+| Column | 1 = Respondent selected this factor |
+|--------|-------------------------------------|
+| `factor_advertisement` | Advertisement |
+| `factor_brand_name` | Brand name |
+| `factor_price` | Price |
+| `factor_quality` | Quality |
+| `factor_recommendations_from_others` | Recommendations from others |
+| `factor_social_status` | Social status |
+
+---
+
+## Preprocessing Notes
+
+1. **Column renaming:** All original Google Forms question strings were shortened to SQL-friendly lowercase names before encoding.
+2. **`branded_is_social_status` encoding:** Mapped directly as No=1, Sometimes=2, Maybe=3, Yes=4 — reflecting ascending brand-status perception.
+3. **`class_label` derivation:** Derived from `monthly_income` string values after all other transformations. Not encoded to integer — kept as VARCHAR for readability in SQL output.
+4. **Multi-select explosion:** `branded_products_preference` → 5 `cat_*` columns; `influential_factors` → 6 `factor_*` columns. Original multi-select columns are dropped post-explosion.
+5. **Privacy:** `email` column (present in raw export) is excluded from the cleaned dataset. `Timestamp` is also dropped.
+6. **No rows dropped:** All 500 respondents are retained in the final dataset.
+
+---
+
+## Raw Survey
+
+The original Google Forms survey is included in this repository as `Spend Smart or Spend Status google form.pdf` for full transparency on question wording, option ordering, and survey structure.
+
+---
+
+*Last updated: March 2026*
